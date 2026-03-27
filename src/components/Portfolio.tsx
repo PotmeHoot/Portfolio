@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, memo, useCallback } from "react";
-import { motion, useReducedMotion, AnimatePresence } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { PROJECTS } from "../data/projects";
 import { CLIENTS } from "../data/clients";
 import { FADE_UP_VARIANTS, DEFAULT_TRANSITION } from "../constants/motion";
@@ -14,7 +14,6 @@ interface ProjectPreviewProps {
 const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPreviewProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [videoProgress, setVideoProgress] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const intervalRef = useRef<any>(null);
 
@@ -35,75 +34,27 @@ const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPrev
   }, [isActive, item.hasVideoPreview, previewImages.length]);
 
   useEffect(() => {
+    let timeout: any;
     if (videoRef.current) {
       if (isActive) {
-        videoRef.current.play().catch(() => {});
-        setIsVideoPlaying(true);
+        timeout = setTimeout(() => {
+          videoRef.current?.play().catch(() => {});
+          setIsVideoPlaying(true);
+        }, 3000);
       } else {
+        if (timeout) clearTimeout(timeout);
         videoRef.current.pause();
         videoRef.current.currentTime = 0;
         setIsVideoPlaying(false);
-        setVideoProgress(0);
       }
     }
-  }, [isActive]);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handleTimeUpdate = () => {
-      if (video.duration) {
-        setVideoProgress((video.currentTime / video.duration) * 100);
-      }
+    return () => {
+      if (timeout) clearTimeout(timeout);
     };
-
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    return () => video.removeEventListener('timeupdate', handleTimeUpdate);
-  }, []);
+  }, [isActive]);
 
   return (
     <div className="absolute inset-0 z-10 overflow-hidden">
-      {/* Timeline Overlay */}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: isActive ? 1 : 0 }}
-        className="absolute top-4 left-4 right-4 z-30 flex gap-1.5 pointer-events-none"
-      >
-        {!shouldReduceMotion && (
-          item.hasVideoPreview ? (
-            <div className="h-[2px] flex-1 bg-white/15 rounded-full overflow-hidden backdrop-blur-[2px]">
-              <motion.div
-                className="h-full bg-white/80"
-                animate={{ width: isActive ? `${videoProgress}%` : "0%" }}
-                transition={{ duration: isActive ? 0.1 : 0, ease: "linear" }}
-              />
-            </div>
-          ) : (
-            Array.from({ length: previewImages.length }).map((_, i) => (
-              <div 
-                key={i} 
-                className="h-[2px] flex-1 bg-white/15 rounded-full overflow-hidden backdrop-blur-[2px]"
-              >
-                <motion.div
-                  className="h-full bg-white/80"
-                  initial={{ width: "0%" }}
-                  animate={{ 
-                    width: !isActive ? "0%" : i < currentImageIndex ? "100%" : i === currentImageIndex ? "100%" : "0%" 
-                  }}
-                  transition={{ 
-                    width: {
-                      duration: isActive && i === currentImageIndex ? 3 : 0,
-                      ease: "linear"
-                    }
-                  }}
-                />
-              </div>
-            ))
-          )
-        )}
-      </motion.div>
-
       {item.hasVideoPreview && item.previewVideo && (
         <motion.video
           ref={videoRef}
@@ -224,23 +175,16 @@ const ProjectCard = memo(({ item, index }: ProjectCardProps) => {
         />
 
         {/* Light Sweep Effect */}
-        {!shouldReduceMotion && (
-          <motion.div
-            initial={{ x: "-100%", skewX: -20, opacity: 0 }}
-            animate={isActive ? { 
-              x: ["-100%", "200%"],
-              opacity: [0, 0.15, 0]
-            } : { 
-              x: "-100%",
-              opacity: 0 
-            }}
-            transition={{
-              duration: 0.8,
-              ease: "easeInOut",
-            }}
-            className="absolute inset-0 z-25 pointer-events-none bg-gradient-to-r from-transparent via-white/20 to-transparent w-1/2 h-full"
-          />
-        )}
+        <motion.div
+          key={isActive ? "active" : "inactive"}
+          initial={{ x: "-150%", skewX: -20 }}
+          animate={isActive ? { x: "150%" } : { x: "-150%" }}
+          transition={isActive ? { 
+            duration: 0.8, 
+            ease: [0.43, 0.13, 0.23, 0.96] 
+          } : { duration: 0 }}
+          className="absolute inset-0 z-25 bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none"
+        />
 
         {/* Content Overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 z-30 translate-y-0 sm:translate-y-4 sm:group-hover:translate-y-0 transition-transform duration-500">
