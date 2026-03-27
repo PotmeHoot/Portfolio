@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, memo, useCallback } from "react";
-import { motion, useReducedMotion } from "motion/react";
-import { ArrowRight } from "lucide-react";
+import { motion, useReducedMotion, AnimatePresence } from "motion/react";
 import { PROJECTS } from "../data/projects";
 import { CLIENTS } from "../data/clients";
 import { FADE_UP_VARIANTS, DEFAULT_TRANSITION } from "../constants/motion";
@@ -14,6 +13,8 @@ interface ProjectPreviewProps {
 
 const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPreviewProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const intervalRef = useRef<any>(null);
 
@@ -23,7 +24,7 @@ const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPrev
     if (isActive && !item.hasVideoPreview && previewImages.length > 1) {
       intervalRef.current = setInterval(() => {
         setCurrentImageIndex((prev) => (prev + 1) % previewImages.length);
-      }, 750);
+      }, 3000);
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current);
       setCurrentImageIndex(0);
@@ -37,34 +38,123 @@ const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPrev
     if (videoRef.current) {
       if (isActive) {
         videoRef.current.play().catch(() => {});
+        setIsVideoPlaying(true);
       } else {
         videoRef.current.pause();
         videoRef.current.currentTime = 0;
+        setIsVideoPlaying(false);
+        setVideoProgress(0);
       }
     }
   }, [isActive]);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleTimeUpdate = () => {
+      if (video.duration) {
+        setVideoProgress((video.currentTime / video.duration) * 100);
+      }
+    };
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    return () => video.removeEventListener('timeupdate', handleTimeUpdate);
+  }, []);
+
   return (
-    <div className="absolute inset-0 z-10">
+    <div className="absolute inset-0 z-10 overflow-hidden">
+      {/* Timeline Overlay */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isActive ? 1 : 0 }}
+        className="absolute top-4 left-4 right-4 z-30 flex gap-1.5 pointer-events-none"
+      >
+        {!shouldReduceMotion && (
+          item.hasVideoPreview ? (
+            <div className="h-[2px] flex-1 bg-white/15 rounded-full overflow-hidden backdrop-blur-[2px]">
+              <motion.div
+                className="h-full bg-white/80"
+                animate={{ width: isActive ? `${videoProgress}%` : "0%" }}
+                transition={{ duration: isActive ? 0.1 : 0, ease: "linear" }}
+              />
+            </div>
+          ) : (
+            Array.from({ length: previewImages.length }).map((_, i) => (
+              <div 
+                key={i} 
+                className="h-[2px] flex-1 bg-white/15 rounded-full overflow-hidden backdrop-blur-[2px]"
+              >
+                <motion.div
+                  className="h-full bg-white/80"
+                  initial={{ width: "0%" }}
+                  animate={{ 
+                    width: !isActive ? "0%" : i < currentImageIndex ? "100%" : i === currentImageIndex ? "100%" : "0%" 
+                  }}
+                  transition={{ 
+                    width: {
+                      duration: isActive && i === currentImageIndex ? 3 : 0,
+                      ease: "linear"
+                    }
+                  }}
+                />
+              </div>
+            ))
+          )
+        )}
+      </motion.div>
+
       {item.hasVideoPreview && item.previewVideo && (
-        <video
+        <motion.video
           ref={videoRef}
           src={item.previewVideo}
           loop
           muted
           playsInline
           preload="none"
-          className={`w-full h-full object-cover transition-opacity duration-500 linear ${isActive ? 'opacity-100' : 'opacity-0'}`}
+          initial={{ opacity: 0, filter: "blur(0px)" }}
+          animate={{ 
+            opacity: isVideoPlaying ? 1 : 0,
+            filter: isVideoPlaying ? ["blur(4px)", "blur(0px)"] : "blur(0px)"
+          }}
+          transition={{ 
+            opacity: { duration: 0.5 },
+            filter: { duration: 0.4 }
+          }}
+          style={{ willChange: "opacity, filter" }}
+          className="w-full h-full object-cover"
         />
       )}
       
       {/* Poster / Image Sequence Slider */}
       <motion.div 
-        className={`absolute inset-0 flex h-full ${item.hasVideoPreview && isActive ? 'opacity-0' : 'opacity-100'}`}
-        animate={{ x: `-${currentImageIndex * 100}%` }}
+        className="absolute inset-0 flex h-full"
+        initial={false}
+        animate={{ 
+          x: `-${currentImageIndex * 100}%`,
+          opacity: isVideoPlaying ? 0 : 1,
+          filter: [
+            "blur(0px) brightness(1)",
+            "blur(4px) brightness(1.02)",
+            "blur(0px) brightness(1)"
+          ],
+          scale: [1, 1.005, 1]
+        }}
+        style={{ willChange: "transform, opacity, filter" }}
         transition={{ 
-          duration: shouldReduceMotion ? 0 : 0.4, 
-          ease: "linear" 
+          x: { 
+            duration: shouldReduceMotion ? 0 : 0.4, 
+            ease: "easeInOut" 
+          },
+          opacity: { duration: 0.5 },
+          filter: { 
+            duration: shouldReduceMotion ? 0 : 0.4, 
+            times: [0, 0.5, 1] 
+          },
+          scale: { 
+            duration: shouldReduceMotion ? 0 : 0.4, 
+            times: [0, 0.5, 1] 
+          }
         }}
       >
         {previewImages.map((src, idx) => (
@@ -133,6 +223,25 @@ const ProjectCard = memo(({ item, index }: ProjectCardProps) => {
           shouldReduceMotion={shouldReduceMotion ?? false} 
         />
 
+        {/* Light Sweep Effect */}
+        {!shouldReduceMotion && (
+          <motion.div
+            initial={{ x: "-100%", skewX: -20, opacity: 0 }}
+            animate={isActive ? { 
+              x: ["-100%", "200%"],
+              opacity: [0, 0.15, 0]
+            } : { 
+              x: "-100%",
+              opacity: 0 
+            }}
+            transition={{
+              duration: 0.8,
+              ease: "easeInOut",
+            }}
+            className="absolute inset-0 z-25 pointer-events-none bg-gradient-to-r from-transparent via-white/20 to-transparent w-1/2 h-full"
+          />
+        )}
+
         {/* Content Overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 z-30 translate-y-0 sm:translate-y-4 sm:group-hover:translate-y-0 transition-transform duration-500">
           <div className="inline-block px-4 py-1.5 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-[9px] font-bold uppercase tracking-[0.3em] text-white/60 mb-4">
@@ -144,13 +253,6 @@ const ProjectCard = memo(({ item, index }: ProjectCardProps) => {
           <p className="text-xs sm:text-sm text-white/40 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-500 delay-100 line-clamp-2 leading-relaxed">
             {item.description}
           </p>
-        </div>
-
-        {/* Hover Arrow */}
-        <div className="absolute top-6 right-6 sm:top-8 sm:right-8 z-30 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-500 -translate-x-0 sm:-translate-x-4 sm:group-hover:translate-x-0">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white flex items-center justify-center text-black">
-            <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
         </div>
       </div>
     </motion.article>
