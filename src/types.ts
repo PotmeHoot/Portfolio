@@ -37,9 +37,12 @@ export interface ProcessStep {
 export interface Project {
   title: string;
   category: string;
-  img: string;
+  poster: string;
   description: string;
   link?: string;
+  previewVideo?: string;
+  previewImages?: string[];
+  hasVideoPreview?: boolean;
 }
 
 export interface ARFilter {

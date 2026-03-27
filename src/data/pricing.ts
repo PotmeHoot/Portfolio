@@ -3,13 +3,13 @@ import { PricingPackage } from "../types";
 export const PRICING_PACKAGES: PricingPackage[] = [
   {
     name: "Video",
-    price: "€200",
+    price: "€100",
     features: ["Short-form videos", "High-conversion ads", "Professional editing", "Fast delivery"],
     popular: false
   },
   {
     name: "Social Media",
-    price: "€300",
+    price: "€250",
     features: ["10 Posts + 3 Videos", "Content Strategy", "Revision rounds", "Visual identity focus"],
     popular: true
   },

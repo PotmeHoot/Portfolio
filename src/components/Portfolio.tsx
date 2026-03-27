@@ -1,8 +1,163 @@
+import { useState, useEffect, useRef, memo, useCallback } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { ArrowRight } from "lucide-react";
 import { PROJECTS } from "../data/projects";
 import { CLIENTS } from "../data/clients";
 import { FADE_UP_VARIANTS, DEFAULT_TRANSITION } from "../constants/motion";
+import { Project } from "../types";
+
+interface ProjectPreviewProps {
+  item: Project;
+  isActive: boolean;
+  shouldReduceMotion: boolean;
+}
+
+const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPreviewProps) => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const intervalRef = useRef<any>(null);
+
+  const previewImages = [item.poster, ...(item.previewImages || [])];
+
+  useEffect(() => {
+    if (isActive && !item.hasVideoPreview && previewImages.length > 1) {
+      intervalRef.current = setInterval(() => {
+        setCurrentImageIndex((prev) => (prev + 1) % previewImages.length);
+      }, 750);
+    } else {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      setCurrentImageIndex(0);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [isActive, item.hasVideoPreview, previewImages.length]);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      if (isActive) {
+        videoRef.current.play().catch(() => {});
+      } else {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0;
+      }
+    }
+  }, [isActive]);
+
+  return (
+    <div className="absolute inset-0 z-10">
+      {item.hasVideoPreview && item.previewVideo && (
+        <video
+          ref={videoRef}
+          src={item.previewVideo}
+          loop
+          muted
+          playsInline
+          preload="none"
+          className={`w-full h-full object-cover transition-opacity duration-500 linear ${isActive ? 'opacity-100' : 'opacity-0'}`}
+        />
+      )}
+      
+      {/* Poster / Image Sequence Slider */}
+      <motion.div 
+        className={`absolute inset-0 flex h-full ${item.hasVideoPreview && isActive ? 'opacity-0' : 'opacity-100'}`}
+        animate={{ x: `-${currentImageIndex * 100}%` }}
+        transition={{ 
+          duration: shouldReduceMotion ? 0 : 0.4, 
+          ease: "linear" 
+        }}
+      >
+        {previewImages.map((src, idx) => (
+          <img 
+            key={idx}
+            src={src} 
+            alt={`${item.title} - Preview ${idx + 1}`} 
+            className="min-w-full flex-shrink-0 h-full object-cover grayscale-[0.6] group-hover:grayscale-0 transition-all duration-700 scale-[1.02] group-hover:scale-100 linear"
+            referrerPolicy="no-referrer"
+            loading="lazy"
+          />
+        ))}
+      </motion.div>
+    </div>
+  );
+});
+
+ProjectPreview.displayName = "ProjectPreview";
+
+interface ProjectCardProps {
+  item: Project;
+  index: number;
+}
+
+const ProjectCard = memo(({ item, index }: ProjectCardProps) => {
+  const shouldReduceMotion = useReducedMotion();
+  const [isActive, setIsActive] = useState(false);
+
+  const handleMouseEnter = useCallback(() => {
+    if (window.matchMedia("(hover: hover)").matches) {
+      setIsActive(true);
+    }
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    if (window.matchMedia("(hover: hover)").matches) {
+      setIsActive(false);
+    }
+  }, []);
+
+  const handleClick = useCallback(() => {
+    if (!window.matchMedia("(hover: hover)").matches) {
+      setIsActive(prev => !prev);
+    }
+  }, []);
+
+  return (
+    <motion.article 
+      initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ ...DEFAULT_TRANSITION, delay: shouldReduceMotion ? 0 : index * 0.05 }}
+      className="group relative"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
+    >
+      <div className="relative aspect-[4/5] rounded-[48px] overflow-hidden border border-white/5 bg-white/5 transition-all duration-700 group-hover:border-white/10 group-hover:shadow-[0_40px_80px_rgba(0,0,0,0.5)] cursor-pointer">
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 z-20" />
+        
+        {/* Media Container */}
+        <ProjectPreview 
+          item={item} 
+          isActive={isActive} 
+          shouldReduceMotion={shouldReduceMotion ?? false} 
+        />
+
+        {/* Content Overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 z-30 translate-y-0 sm:translate-y-4 sm:group-hover:translate-y-0 transition-transform duration-500">
+          <div className="inline-block px-4 py-1.5 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-[9px] font-bold uppercase tracking-[0.3em] text-white/60 mb-4">
+            {item.category}
+          </div>
+          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3 leading-tight tracking-tight">
+            {item.title}
+          </h3>
+          <p className="text-xs sm:text-sm text-white/40 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-500 delay-100 line-clamp-2 leading-relaxed">
+            {item.description}
+          </p>
+        </div>
+
+        {/* Hover Arrow */}
+        <div className="absolute top-6 right-6 sm:top-8 sm:right-8 z-30 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-500 -translate-x-0 sm:-translate-x-4 sm:group-hover:translate-x-0">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white flex items-center justify-center text-black">
+            <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+          </div>
+        </div>
+      </div>
+    </motion.article>
+  );
+});
+
+ProjectCard.displayName = "ProjectCard";
 
 export const Portfolio = () => {
   const shouldReduceMotion = useReducedMotion();
@@ -46,48 +201,7 @@ export const Portfolio = () => {
         {/* Portfolio Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
           {PROJECTS.map((item, i) => (
-            <motion.article 
-              key={i}
-              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ ...DEFAULT_TRANSITION, delay: shouldReduceMotion ? 0 : i * 0.05 }}
-              className="group relative"
-            >
-              <div className="relative aspect-[4/5] rounded-[48px] overflow-hidden border border-white/5 bg-white/5 transition-all duration-700 group-hover:border-white/10 group-hover:shadow-[0_40px_80px_rgba(0,0,0,0.5)]">
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 z-10" />
-                
-                {/* Image */}
-                <img 
-                  src={item.img} 
-                  alt={`${item.title} - ${item.category}`} 
-                  className="w-full h-full object-cover grayscale-[0.6] group-hover:grayscale-0 transition-all duration-700 scale-[1.02] group-hover:scale-100"
-                  referrerPolicy="no-referrer"
-                  loading="lazy"
-                />
-
-                {/* Content Overlay */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 z-30 translate-y-0 sm:translate-y-4 sm:group-hover:translate-y-0 transition-transform duration-500">
-                  <div className="inline-block px-4 py-1.5 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-[9px] font-bold uppercase tracking-[0.3em] text-white/60 mb-4">
-                    {item.category}
-                  </div>
-                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3 leading-tight tracking-tight">
-                    {item.title}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-white/40 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-500 delay-100 line-clamp-2 leading-relaxed">
-                    {item.description}
-                  </p>
-                </div>
-
-                {/* Hover Arrow */}
-                <div className="absolute top-6 right-6 sm:top-8 sm:right-8 z-30 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-500 -translate-x-0 sm:-translate-x-4 sm:group-hover:translate-x-0">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white flex items-center justify-center text-black">
-                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </div>
-                </div>
-              </div>
-            </motion.article>
+            <ProjectCard key={i} item={item} index={i} />
           ))}
         </div>
       </div>
