@@ -12,34 +12,82 @@ interface ProjectPreviewProps {
 }
 
 const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPreviewProps) => {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  // 1. Core State
+  const [activeSegmentIndex, setActiveSegmentIndex] = useState(0);
+  const [activeSegmentProgress, setActiveSegmentProgress] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [videoDuration, setVideoDuration] = useState(10);
+  
+  // 2. Refs for non-reactive values
   const videoRef = useRef<HTMLVideoElement>(null);
-  const imageIntervalRef = useRef<any>(null);
+  const rafRef = useRef<number | null>(null);
 
+  // 3. Derived Media Info
   const previewImages = item.previewImages || [];
   const hasPreviewImages = previewImages.length > 0;
+  const hasVideo = !!(item.hasVideoPreview && item.previewVideo);
 
-  // 1. Image Rotation Logic
+  // 4. Derived Visibility Flags
+  const isVideoActive = hasVideo && isVideoPlaying;
+  const isImageSequenceActive = isActive && hasPreviewImages && !hasVideo;
+  const isIdle = !isActive || (!isVideoActive && !isImageSequenceActive);
+
+  // 5. Image Sequence Controller (Centralized RAF Loop)
   useEffect(() => {
-    if (isActive && previewImages.length > 1) {
-      imageIntervalRef.current = setInterval(() => {
-        setCurrentImageIndex((prev) => (prev + 1) % previewImages.length);
-      }, 3000);
+    const shouldLoop = isImageSequenceActive && previewImages.length >= 1;
+
+    if (shouldLoop) {
+      const totalDuration = 3000; // 3 seconds per image
+      const cycleDuration = totalDuration * previewImages.length;
+      const startTime = performance.now();
+
+      const updateProgress = () => {
+        const elapsed = performance.now() - startTime;
+        const cycleElapsed = elapsed % cycleDuration;
+        const totalProgress = (cycleElapsed / totalDuration) * 100;
+        
+        const segmentIndex = Math.floor(totalProgress / 100);
+        const segmentProgress = totalProgress % 100;
+        
+        setActiveSegmentIndex(segmentIndex);
+        setActiveSegmentProgress(segmentProgress);
+        
+        rafRef.current = requestAnimationFrame(updateProgress);
+      };
+
+      rafRef.current = requestAnimationFrame(updateProgress);
     }
 
     return () => {
-      if (imageIntervalRef.current) clearInterval(imageIntervalRef.current);
-      // Reset index immediately when interaction ends
-      if (!isActive) setCurrentImageIndex(0);
+      // Cleanup RAF
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      
+      // Centralized Reset: Only when interaction ends
+      if (!isActive) {
+        setActiveSegmentIndex(0);
+        setActiveSegmentProgress(0);
+      }
     };
-  }, [isActive, previewImages.length]);
+  }, [isActive, isImageSequenceActive, previewImages.length]);
 
-  // 2. Video Playback Logic
+  // 6. Video Playback Controller
   useEffect(() => {
-    if (isActive && item.hasVideoPreview && item.previewVideo) {
-      videoRef.current?.play().catch(() => {});
-      setIsVideoPlaying(true);
+    if (isActive && hasVideo) {
+      const playVideo = async () => {
+        try {
+          if (videoRef.current) {
+            await videoRef.current.play();
+            setIsVideoPlaying(true);
+          }
+        } catch (error) {
+          console.error("Video play failed:", error);
+          setIsVideoPlaying(false);
+        }
+      };
+      playVideo();
     }
 
     return () => {
@@ -51,17 +99,18 @@ const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPrev
         setIsVideoPlaying(false);
       }
     };
-  }, [isActive, item.hasVideoPreview, item.previewVideo]);
+  }, [isActive, hasVideo]);
 
-  // 3. Visibility States
-  const isVideoActive = item.hasVideoPreview && isVideoPlaying;
-  const isImageSequenceActive = isActive && hasPreviewImages && !isVideoActive;
-  // Poster shows when idle, OR as a fallback if no active media is ready
-  const isIdle = !isActive || (!hasPreviewImages && !isVideoActive);
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      setVideoDuration(videoRef.current.duration);
+    }
+  };
 
+  // 7. Layered Rendering
   return (
     <div className="absolute inset-0 z-10 overflow-hidden">
-      {/* Layer 1: Static Poster (Idle State) */}
+      {/* Layer 1: Base Poster (Idle State) */}
       <motion.img
         src={item.poster}
         alt={item.title}
@@ -75,8 +124,8 @@ const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPrev
         referrerPolicy="no-referrer"
       />
 
-      {/* Layer 2: Image Sequence (Active State - Instant) */}
-      {hasPreviewImages && (
+      {/* Layer 2: Image Sequence Preview */}
+      {hasPreviewImages && !hasVideo && (
         <div className="absolute inset-0">
           {previewImages.map((src, idx) => (
             <motion.img
@@ -84,13 +133,17 @@ const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPrev
               src={src}
               alt={`${item.title} - Preview ${idx + 1}`}
               className="absolute inset-0 w-full h-full object-cover"
+              loading={idx === 0 ? "eager" : "lazy"}
               initial={{ opacity: 0, scale: 1.03 }}
               animate={{ 
-                opacity: (isImageSequenceActive && idx === currentImageIndex) ? 1 : 0,
-                scale: (isImageSequenceActive && idx === currentImageIndex) ? 1 : 1.03,
+                opacity: (isImageSequenceActive && idx === activeSegmentIndex) ? 1 : 0,
+                scale: (isImageSequenceActive && idx === activeSegmentIndex) ? 1 : 1.03,
               }}
               transition={{ 
-                opacity: { duration: 1, ease: [0.22, 1, 0.36, 1] },
+                opacity: { 
+                  duration: (idx === 0 && activeSegmentIndex === 0) ? 0.4 : 1, 
+                  ease: [0.22, 1, 0.36, 1] 
+                },
                 scale: { 
                   duration: shouldReduceMotion ? 0 : 1, 
                   ease: [0.22, 1, 0.36, 1] 
@@ -98,14 +151,13 @@ const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPrev
               }}
               style={{ willChange: "opacity, transform" }}
               referrerPolicy="no-referrer"
-              loading="lazy"
             />
           ))}
         </div>
       )}
 
-      {/* Layer 3: Video Preview (Active State - Instant) */}
-      {item.hasVideoPreview && item.previewVideo && (
+      {/* Layer 3: Video Preview */}
+      {hasVideo && (
         <motion.video
           ref={videoRef}
           src={item.previewVideo}
@@ -113,6 +165,7 @@ const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPrev
           muted
           playsInline
           preload="auto"
+          onLoadedMetadata={handleLoadedMetadata}
           initial={{ opacity: 0, filter: "blur(0px)" }}
           animate={{ 
             opacity: isVideoActive ? 1 : 0,
@@ -125,6 +178,48 @@ const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPrev
           style={{ willChange: "opacity, filter" }}
           className="w-full h-full object-cover"
         />
+      )}
+
+      {/* Layer 4: Segmented Timeline (Image Only) */}
+      {isImageSequenceActive && previewImages.length >= 1 && (
+        <div className="absolute top-4 left-4 right-4 z-20 flex gap-1.5">
+          {previewImages.map((_, idx) => (
+            <div 
+              key={idx}
+              className="h-[2px] flex-1 overflow-hidden rounded-full bg-white/20 backdrop-blur-[1px]"
+            >
+              <motion.div
+                className="h-full bg-white/90"
+                initial={false}
+                animate={{ 
+                  width: idx < activeSegmentIndex ? "100%" : idx === activeSegmentIndex ? `${activeSegmentProgress}%` : "0%" 
+                }}
+                transition={{ 
+                  duration: idx === activeSegmentIndex ? 0.032 : 0.1, 
+                  ease: "linear" 
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Layer 5: Video Progress (Video Only) */}
+      {isVideoActive && (
+        <div className="absolute top-4 left-4 right-4 z-20">
+          <div className="h-[2px] w-full overflow-hidden rounded-full bg-white/20 backdrop-blur-[1px]">
+            <motion.div 
+              className="h-full bg-white/90"
+              initial={{ width: "0%" }}
+              animate={{ width: "100%" }}
+              transition={{ 
+                duration: videoDuration, 
+                ease: "linear", 
+                repeat: Infinity 
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
