@@ -15,46 +15,116 @@ const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPrev
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const intervalRef = useRef<any>(null);
+  const imageIntervalRef = useRef<any>(null);
+  const videoTimeoutRef = useRef<any>(null);
 
-  const previewImages = [item.poster, ...(item.previewImages || [])];
+  const previewImages = item.previewImages || [];
+  const hasPreviewImages = previewImages.length > 0;
 
+  // 1. Image Rotation Logic
   useEffect(() => {
-    if (isActive && !item.hasVideoPreview && previewImages.length > 1) {
-      intervalRef.current = setInterval(() => {
+    if (isActive && previewImages.length > 1) {
+      imageIntervalRef.current = setInterval(() => {
         setCurrentImageIndex((prev) => (prev + 1) % previewImages.length);
       }, 3000);
-    } else {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      setCurrentImageIndex(0);
     }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isActive, item.hasVideoPreview, previewImages.length]);
 
+    return () => {
+      if (imageIntervalRef.current) clearInterval(imageIntervalRef.current);
+      // Reset index immediately when interaction ends
+      if (!isActive) setCurrentImageIndex(0);
+    };
+  }, [isActive, previewImages.length]);
+
+  // 2. Video Playback Logic
   useEffect(() => {
-    let timeout: any;
-    if (videoRef.current) {
-      if (isActive) {
-        timeout = setTimeout(() => {
-          videoRef.current?.play().catch(() => {});
-          setIsVideoPlaying(true);
-        }, 3000);
-      } else {
-        if (timeout) clearTimeout(timeout);
-        videoRef.current.pause();
-        videoRef.current.currentTime = 0;
+    if (isActive && item.hasVideoPreview && item.previewVideo) {
+      videoTimeoutRef.current = setTimeout(() => {
+        videoRef.current?.play().catch(() => {});
+        setIsVideoPlaying(true);
+      }, 3000);
+    }
+
+    return () => {
+      if (videoTimeoutRef.current) clearTimeout(videoTimeoutRef.current);
+      if (!isActive) {
+        if (videoRef.current) {
+          videoRef.current.pause();
+          videoRef.current.currentTime = 0;
+        }
         setIsVideoPlaying(false);
       }
-    }
-    return () => {
-      if (timeout) clearTimeout(timeout);
     };
-  }, [isActive]);
+  }, [isActive, item.hasVideoPreview, item.previewVideo]);
+
+  // 3. Visibility States
+  const isVideoActive = item.hasVideoPreview && isVideoPlaying;
+  const isImageSequenceActive = isActive && hasPreviewImages && !isVideoActive;
+  // Poster shows when idle, OR as a fallback if no active media is ready
+  const isIdle = !isActive || (!hasPreviewImages && !isVideoActive);
 
   return (
     <div className="absolute inset-0 z-10 overflow-hidden">
+      {/* Layer 1: Static Poster (Idle State) */}
+      <motion.img
+        src={item.poster}
+        alt={item.title}
+        initial={false}
+        animate={{ 
+          opacity: isIdle ? 1 : 0,
+          scale: isActive ? 1 : 1.02,
+        }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+        className="absolute inset-0 w-full h-full object-cover grayscale-[0.6] group-hover:grayscale-0 transition-all duration-700"
+        referrerPolicy="no-referrer"
+      />
+
+      {/* Layer 2: Image Sequence (Active State - Instant) */}
+      {hasPreviewImages && (
+        <motion.div 
+          className="absolute inset-0 flex h-full"
+          initial={{ opacity: 0 }}
+          animate={{ 
+            opacity: isImageSequenceActive ? 1 : 0,
+            x: `-${currentImageIndex * 100}%`,
+            filter: isImageSequenceActive ? [
+              "blur(0px) brightness(1)",
+              "blur(4px) brightness(1.02)",
+              "blur(0px) brightness(1)"
+            ] : "blur(0px) brightness(1)",
+            scale: isImageSequenceActive ? [1, 1.005, 1] : 1
+          }}
+          style={{ willChange: "transform, opacity, filter" }}
+          transition={{ 
+            opacity: { duration: 0.2, ease: "easeOut" },
+            x: { 
+              duration: (!isActive || shouldReduceMotion) ? 0 : 0.4, 
+              ease: "easeInOut" 
+            },
+            filter: { 
+              duration: shouldReduceMotion ? 0 : 0.4, 
+              times: [0, 0.5, 1] 
+            },
+            scale: { 
+              duration: shouldReduceMotion ? 0 : 0.4, 
+              times: [0, 0.5, 1] 
+            }
+          }}
+        >
+          {previewImages.map((src, idx) => (
+            <img 
+              key={idx}
+              src={src} 
+              alt={`${item.title} - Preview ${idx + 1}`} 
+              className="min-w-full flex-shrink-0 h-full object-cover"
+              referrerPolicy="no-referrer"
+              loading="lazy"
+            />
+          ))}
+        </motion.div>
+      )}
+
+      {/* Layer 3: Video Preview (Active State - Delayed) */}
       {item.hasVideoPreview && item.previewVideo && (
         <motion.video
           ref={videoRef}
@@ -65,8 +135,8 @@ const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPrev
           preload="none"
           initial={{ opacity: 0, filter: "blur(0px)" }}
           animate={{ 
-            opacity: isVideoPlaying ? 1 : 0,
-            filter: isVideoPlaying ? ["blur(4px)", "blur(0px)"] : "blur(0px)"
+            opacity: isVideoActive ? 1 : 0,
+            filter: isVideoActive ? ["blur(4px)", "blur(0px)"] : "blur(0px)"
           }}
           transition={{ 
             opacity: { duration: 0.5 },
@@ -76,49 +146,6 @@ const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPrev
           className="w-full h-full object-cover"
         />
       )}
-      
-      {/* Poster / Image Sequence Slider */}
-      <motion.div 
-        className="absolute inset-0 flex h-full"
-        initial={false}
-        animate={{ 
-          x: `-${currentImageIndex * 100}%`,
-          opacity: isVideoPlaying ? 0 : 1,
-          filter: [
-            "blur(0px) brightness(1)",
-            "blur(4px) brightness(1.02)",
-            "blur(0px) brightness(1)"
-          ],
-          scale: [1, 1.005, 1]
-        }}
-        style={{ willChange: "transform, opacity, filter" }}
-        transition={{ 
-          x: { 
-            duration: shouldReduceMotion ? 0 : 0.4, 
-            ease: "easeInOut" 
-          },
-          opacity: { duration: 0.5 },
-          filter: { 
-            duration: shouldReduceMotion ? 0 : 0.4, 
-            times: [0, 0.5, 1] 
-          },
-          scale: { 
-            duration: shouldReduceMotion ? 0 : 0.4, 
-            times: [0, 0.5, 1] 
-          }
-        }}
-      >
-        {previewImages.map((src, idx) => (
-          <img 
-            key={idx}
-            src={src} 
-            alt={`${item.title} - Preview ${idx + 1}`} 
-            className="min-w-full flex-shrink-0 h-full object-cover grayscale-[0.6] group-hover:grayscale-0 transition-all duration-700 scale-[1.02] group-hover:scale-100 linear"
-            referrerPolicy="no-referrer"
-            loading="lazy"
-          />
-        ))}
-      </motion.div>
     </div>
   );
 });
