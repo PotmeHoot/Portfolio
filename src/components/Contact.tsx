@@ -1,6 +1,8 @@
 import { motion, useReducedMotion } from "motion/react";
 import { ArrowRight } from "lucide-react";
 import { FADE_UP_VARIANTS, DEFAULT_TRANSITION } from "../constants/motion";
+import { Button } from "./ui/Button";
+import { PillLabel } from "./ui/PillLabel";
 
 export const Contact = () => {
   const shouldReduceMotion = useReducedMotion();
@@ -17,10 +19,10 @@ export const Contact = () => {
           viewport={{ once: true, margin: "-100px" }}
           transition={DEFAULT_TRANSITION}
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] uppercase tracking-[0.2em] font-bold text-white/40 mb-8">
+          <PillLabel className="mb-8">
             <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
             Available for selected projects
-          </div>
+          </PillLabel>
 
           <h2 className="section-title">
             Let's create <br className="hidden md:block" />
@@ -29,9 +31,13 @@ export const Contact = () => {
           
           <div className="flex flex-col items-center gap-16 md:gap-24">
             {/* Primary Dominant CTA */}
-            <a href="mailto:jurajzacek13@gmail.com" className="btn-primary !text-xl md:!text-4xl !px-8 md:!px-16 !py-5 md:!py-8 !rounded-[24px] md:!rounded-[48px]">
+            <Button 
+              href="mailto:jurajzacek13@gmail.com" 
+              variant="primary"
+              className="!text-xl md:!text-4xl !px-8 md:!px-16 !py-5 md:!py-8 !rounded-[24px] md:!rounded-[48px]"
+            >
               Start a project <ArrowRight className="ml-4 w-6 h-6 md:w-10 md:h-10 group-hover:translate-x-2 transition-transform" />
-            </a>
+            </Button>
 
             {/* Simplified Supporting Info */}
             <div className="grid md:grid-cols-2 gap-12 md:gap-32 items-start text-left md:text-center w-full max-w-3xl mx-auto">

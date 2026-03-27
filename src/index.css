@@ -75,12 +75,24 @@
   @apply shadow-[0_0_60px_rgba(59,130,246,0.1)];
 }
 
+@utility card-base {
+  @apply bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-[32px] transition-all duration-500 overflow-hidden;
+}
+
+@utility card-hover {
+  @apply hover:bg-white/[0.06] hover:border-white/20;
+}
+
+@utility card-padding {
+  @apply p-8 md:p-10;
+}
+
 @utility card-premium {
-  @apply rounded-[32px] border border-white/5 bg-white/[0.02] transition-all duration-500;
+  @apply card-base card-padding bg-gradient-to-br from-white/[0.05] to-transparent border-white/5 hover:border-white/15;
 }
 
 @utility card-glass {
-  @apply glass rounded-[40px] p-10 glass-hover;
+  @apply card-base card-hover card-padding;
 }
 
 @utility section-container {

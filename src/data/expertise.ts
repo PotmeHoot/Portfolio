@@ -9,7 +9,7 @@ export const EXPERIENCE_ITEMS: ExperienceItem[] = [
   {
     icon: "Building2",
     title: "Agency Background",
-    desc: "MAYER/McCANN, PS:Digital, PS:Digital."
+    desc: "MAYER/McCANN, PS:Digital."
   },
   {
     icon: "Gamepad2",

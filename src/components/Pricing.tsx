@@ -1,47 +1,33 @@
-import { motion, useReducedMotion } from "motion/react";
 import { CheckCircle2 } from "lucide-react";
 import { PRICING_PACKAGES } from "../data/pricing";
-import { FADE_UP_VARIANTS, DEFAULT_TRANSITION } from "../constants/motion";
+import { SectionHeader } from "./ui/SectionHeader";
+import { Button } from "./ui/Button";
+import { CardShell } from "./ui/CardShell";
+import { SectionWrapper } from "./ui/SectionWrapper";
+import { Reveal } from "./ui/Reveal";
 
 export const Pricing = () => {
-  const shouldReduceMotion = useReducedMotion();
-
   return (
-    <section id="pricing" className="py-10 md:py-20 px-6 bg-bg-secondary relative overflow-hidden">
+    <SectionWrapper id="pricing" showGlow={false} className="py-10 md:py-20 bg-bg-secondary">
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
       
-      <div className="section-container">
-        <motion.div
-          variants={FADE_UP_VARIANTS}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          transition={DEFAULT_TRANSITION}
-        >
-          <div className="mb-8 md:mb-12 text-center">
-            <div className="section-eyebrow justify-center">Investment</div>
-            <h2 className="section-title">Pricing</h2>
-            <p className="section-description mx-auto">
-              Simple and flexible packages built for brands that want to grow.
-            </p>
-          </div>
+      <Reveal>
+        <SectionHeader 
+          eyebrow="Investment"
+          title="Pricing"
+          description="Simple and flexible packages built for brands that want to grow."
+          centered
+        />
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {PRICING_PACKAGES.map((pkg, i) => (
-              <motion.div 
-                key={i}
-                variants={FADE_UP_VARIANTS}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                transition={{ 
-                  ...DEFAULT_TRANSITION, 
-                  delay: shouldReduceMotion ? 0 : i * 0.05 
-                }}
-                className={`relative p-6 sm:p-8 rounded-[40px] md:rounded-[48px] flex flex-col transition-all duration-500 hover:bg-white/[0.06] group ${
+        <div className="grid md:grid-cols-3 gap-8">
+          {PRICING_PACKAGES.map((pkg, i) => (
+            <Reveal key={i} delay={i * 0.05} className="h-full">
+              <CardShell 
+                variant={pkg.popular ? "premium" : "glass"}
+                className={`relative flex flex-col h-full group ${
                   pkg.popular 
-                    ? "bg-white text-black scale-100 md:scale-105 z-10 shadow-[0_20px_50px_rgba(255,255,255,0.1)]" 
-                    : "border border-white/5 bg-white/[0.02] text-white"
+                    ? "!bg-white !text-black scale-100 md:scale-105 z-10 shadow-[0_20px_50px_rgba(255,255,255,0.1)] !border-transparent" 
+                    : ""
                 }`}
               >
                 {pkg.popular && (
@@ -68,21 +54,18 @@ export const Pricing = () => {
                   ))}
                 </ul>
 
-                <a 
+                <Button 
                   href="#contact" 
-                  className={`w-full py-3 md:py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all duration-500 text-center ${
-                    pkg.popular 
-                      ? "bg-black text-white hover:bg-black/90" 
-                      : "bg-white/5 text-white hover:bg-white/10"
-                  }`}
+                  variant={pkg.popular ? "primary" : "secondary"}
+                  className="w-full"
                 >
                   Get Started
-                </a>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-    </section>
+                </Button>
+              </CardShell>
+            </Reveal>
+          ))}
+        </div>
+      </Reveal>
+    </SectionWrapper>
   );
 };

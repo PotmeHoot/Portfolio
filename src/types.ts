@@ -1,10 +1,14 @@
+import * as LucideIcons from "lucide-react";
+
+export type IconName = keyof typeof LucideIcons;
+
 export interface NavLink {
   id: string;
   label: string;
 }
 
 export interface Service {
-  icon: string; // Icon name from lucide-react
+  icon: IconName;
   title: string;
   items: string[];
 }
@@ -17,7 +21,7 @@ export interface PricingPackage {
 }
 
 export interface ExperienceItem {
-  icon: string; // Icon name from lucide-react
+  icon: IconName;
   title: string;
   desc: string;
 }
@@ -42,7 +46,6 @@ export interface Project {
   link?: string;
   previewVideo?: string;
   previewImages?: string[];
-  hasVideoPreview?: boolean;
 }
 
 export interface ARFilter {

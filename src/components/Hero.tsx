@@ -3,6 +3,9 @@ import { ArrowRight } from "lucide-react";
 import { HERO_ASSETS } from "../data/hero";
 import { FADE_UP_VARIANTS, SCALE_VARIANTS, DEFAULT_TRANSITION } from "../constants/motion";
 
+import { Button } from "./ui/Button";
+import { PillLabel } from "./ui/PillLabel";
+
 export const Hero = () => {
   const shouldReduceMotion = useReducedMotion();
 
@@ -22,10 +25,10 @@ export const Hero = () => {
           transition={DEFAULT_TRANSITION}
           className="text-left"
         >
-          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 md:mb-12">
+          <PillLabel className="mb-8 md:mb-12">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-white/60">Available for selected projects</span>
-          </div>
+            Available for selected projects
+          </PillLabel>
           
           <h1 className="text-4xl sm:text-5xl md:text-8xl font-bold tracking-tighter text-gradient mb-6 md:mb-8 leading-[1.1] md:leading-[1]">
             I create social media <br />
@@ -38,12 +41,12 @@ export const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center gap-4 md:gap-6">
-            <a href="#contact" className="btn-primary">
+            <Button href="#contact" variant="primary">
               Let's talk <ArrowRight className="w-5 h-5" />
-            </a>
-            <a href="#work" className="btn-secondary">
+            </Button>
+            <Button href="#work" variant="secondary">
               View Work
-            </a>
+            </Button>
           </div>
         </motion.div>
 

@@ -1,358 +1,41 @@
-import { useState, useEffect, useRef, memo, useCallback } from "react";
-import { motion, useReducedMotion } from "motion/react";
 import { PROJECTS } from "../data/projects";
 import { CLIENTS } from "../data/clients";
-import { FADE_UP_VARIANTS, DEFAULT_TRANSITION } from "../constants/motion";
-import { Project } from "../types";
-
-interface ProjectPreviewProps {
-  item: Project;
-  isActive: boolean;
-  shouldReduceMotion: boolean;
-}
-
-const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPreviewProps) => {
-  // 1. Core State
-  const [activeSegmentIndex, setActiveSegmentIndex] = useState(0);
-  const [activeSegmentProgress, setActiveSegmentProgress] = useState(0);
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [videoDuration, setVideoDuration] = useState(10);
-  
-  // 2. Refs for non-reactive values
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const rafRef = useRef<number | null>(null);
-
-  // 3. Derived Media Info
-  const previewImages = item.previewImages || [];
-  const hasPreviewImages = previewImages.length > 0;
-  const hasVideo = !!(item.hasVideoPreview && item.previewVideo);
-
-  // 4. Derived Visibility Flags
-  const isVideoActive = hasVideo && isVideoPlaying;
-  const isImageSequenceActive = isActive && hasPreviewImages && !hasVideo;
-  const isIdle = !isActive || (!isVideoActive && !isImageSequenceActive);
-
-  // 5. Image Sequence Controller (Centralized RAF Loop)
-  useEffect(() => {
-    const shouldLoop = isImageSequenceActive && previewImages.length >= 1;
-
-    if (shouldLoop) {
-      const totalDuration = 3000; // 3 seconds per image
-      const cycleDuration = totalDuration * previewImages.length;
-      const startTime = performance.now();
-
-      const updateProgress = () => {
-        const elapsed = performance.now() - startTime;
-        const cycleElapsed = elapsed % cycleDuration;
-        const totalProgress = (cycleElapsed / totalDuration) * 100;
-        
-        const segmentIndex = Math.floor(totalProgress / 100);
-        const segmentProgress = totalProgress % 100;
-        
-        setActiveSegmentIndex(segmentIndex);
-        setActiveSegmentProgress(segmentProgress);
-        
-        rafRef.current = requestAnimationFrame(updateProgress);
-      };
-
-      rafRef.current = requestAnimationFrame(updateProgress);
-    }
-
-    return () => {
-      // Cleanup RAF
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-      
-      // Centralized Reset: Only when interaction ends
-      if (!isActive) {
-        setActiveSegmentIndex(0);
-        setActiveSegmentProgress(0);
-      }
-    };
-  }, [isActive, isImageSequenceActive, previewImages.length]);
-
-  // 6. Video Playback Controller
-  useEffect(() => {
-    if (isActive && hasVideo) {
-      const playVideo = async () => {
-        try {
-          if (videoRef.current) {
-            await videoRef.current.play();
-            setIsVideoPlaying(true);
-          }
-        } catch (error) {
-          console.error("Video play failed:", error);
-          setIsVideoPlaying(false);
-        }
-      };
-      playVideo();
-    }
-
-    return () => {
-      if (!isActive) {
-        if (videoRef.current) {
-          videoRef.current.pause();
-          videoRef.current.currentTime = 0;
-        }
-        setIsVideoPlaying(false);
-      }
-    };
-  }, [isActive, hasVideo]);
-
-  const handleLoadedMetadata = () => {
-    if (videoRef.current) {
-      setVideoDuration(videoRef.current.duration);
-    }
-  };
-
-  // 7. Layered Rendering
-  return (
-    <div className="absolute inset-0 z-10 overflow-hidden">
-      {/* Layer 1: Base Poster (Idle State) */}
-      <motion.img
-        src={item.poster}
-        alt={item.title}
-        initial={false}
-        animate={{ 
-          opacity: isIdle ? 1 : 0,
-          scale: isActive ? 1 : 1.02,
-        }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-        className="absolute inset-0 w-full h-full object-cover grayscale-[0.6] group-hover:grayscale-0 transition-all duration-700"
-        referrerPolicy="no-referrer"
-      />
-
-      {/* Layer 2: Image Sequence Preview */}
-      {hasPreviewImages && !hasVideo && (
-        <div className="absolute inset-0">
-          {previewImages.map((src, idx) => (
-            <motion.img
-              key={idx}
-              src={src}
-              alt={`${item.title} - Preview ${idx + 1}`}
-              className="absolute inset-0 w-full h-full object-cover"
-              loading={idx === 0 ? "eager" : "lazy"}
-              initial={{ opacity: 0, scale: 1.03 }}
-              animate={{ 
-                opacity: (isImageSequenceActive && idx === activeSegmentIndex) ? 1 : 0,
-                scale: (isImageSequenceActive && idx === activeSegmentIndex) ? 1 : 1.03,
-              }}
-              transition={{ 
-                opacity: { 
-                  duration: (idx === 0 && activeSegmentIndex === 0) ? 0.4 : 1, 
-                  ease: [0.22, 1, 0.36, 1] 
-                },
-                scale: { 
-                  duration: shouldReduceMotion ? 0 : 1, 
-                  ease: [0.22, 1, 0.36, 1] 
-                }
-              }}
-              style={{ willChange: "opacity, transform" }}
-              referrerPolicy="no-referrer"
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Layer 3: Video Preview */}
-      {hasVideo && (
-        <motion.video
-          ref={videoRef}
-          src={item.previewVideo}
-          loop
-          muted
-          playsInline
-          preload="auto"
-          onLoadedMetadata={handleLoadedMetadata}
-          initial={{ opacity: 0, filter: "blur(0px)" }}
-          animate={{ 
-            opacity: isVideoActive ? 1 : 0,
-            filter: isVideoActive ? ["blur(4px)", "blur(0px)"] : "blur(0px)"
-          }}
-          transition={{ 
-            opacity: { duration: 0.5 },
-            filter: { duration: 0.4 }
-          }}
-          style={{ willChange: "opacity, filter" }}
-          className="w-full h-full object-cover"
-        />
-      )}
-
-      {/* Layer 4: Segmented Timeline (Image Only) */}
-      {isImageSequenceActive && previewImages.length >= 1 && (
-        <div className="absolute top-4 left-4 right-4 z-20 flex gap-1.5">
-          {previewImages.map((_, idx) => (
-            <div 
-              key={idx}
-              className="h-[2px] flex-1 overflow-hidden rounded-full bg-white/20 backdrop-blur-[1px]"
-            >
-              <motion.div
-                className="h-full bg-white/90"
-                initial={false}
-                animate={{ 
-                  width: idx < activeSegmentIndex ? "100%" : idx === activeSegmentIndex ? `${activeSegmentProgress}%` : "0%" 
-                }}
-                transition={{ 
-                  duration: idx === activeSegmentIndex ? 0.032 : 0.1, 
-                  ease: "linear" 
-                }}
-              />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Layer 5: Video Progress (Video Only) */}
-      {isVideoActive && (
-        <div className="absolute top-4 left-4 right-4 z-20">
-          <div className="h-[2px] w-full overflow-hidden rounded-full bg-white/20 backdrop-blur-[1px]">
-            <motion.div 
-              className="h-full bg-white/90"
-              initial={{ width: "0%" }}
-              animate={{ width: "100%" }}
-              transition={{ 
-                duration: videoDuration, 
-                ease: "linear", 
-                repeat: Infinity 
-              }}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-});
-
-ProjectPreview.displayName = "ProjectPreview";
-
-interface ProjectCardProps {
-  item: Project;
-  index: number;
-}
-
-const ProjectCard = memo(({ item, index }: ProjectCardProps) => {
-  const shouldReduceMotion = useReducedMotion();
-  const [isActive, setIsActive] = useState(false);
-
-  const handleMouseEnter = useCallback(() => {
-    if (window.matchMedia("(hover: hover)").matches) {
-      setIsActive(true);
-    }
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    if (window.matchMedia("(hover: hover)").matches) {
-      setIsActive(false);
-    }
-  }, []);
-
-  const handleClick = useCallback(() => {
-    if (!window.matchMedia("(hover: hover)").matches) {
-      setIsActive(prev => !prev);
-    }
-  }, []);
-
-  return (
-    <motion.article 
-      initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ ...DEFAULT_TRANSITION, delay: shouldReduceMotion ? 0 : index * 0.05 }}
-      className="group relative"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onClick={handleClick}
-    >
-      <div className="relative aspect-[4/5] rounded-[48px] overflow-hidden border border-white/5 bg-white/5 transition-all duration-700 group-hover:border-white/10 group-hover:shadow-[0_40px_80px_rgba(0,0,0,0.5)] cursor-pointer">
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 z-20" />
-        
-        {/* Media Container */}
-        <ProjectPreview 
-          item={item} 
-          isActive={isActive} 
-          shouldReduceMotion={shouldReduceMotion ?? false} 
-        />
-
-        {/* Light Sweep Effect */}
-        <motion.div
-          key={isActive ? "active" : "inactive"}
-          initial={{ x: "-150%", skewX: -20 }}
-          animate={isActive ? { x: "150%" } : { x: "-150%" }}
-          transition={isActive ? { 
-            duration: 0.8, 
-            ease: [0.43, 0.13, 0.23, 0.96] 
-          } : { duration: 0 }}
-          className="absolute inset-0 z-25 bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none"
-        />
-
-        {/* Content Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 z-30 translate-y-0 sm:translate-y-4 sm:group-hover:translate-y-0 transition-transform duration-500">
-          <div className="inline-block px-4 py-1.5 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-[9px] font-bold uppercase tracking-[0.3em] text-white/60 mb-4">
-            {item.category}
-          </div>
-          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3 leading-tight tracking-tight">
-            {item.title}
-          </h3>
-          <p className="text-xs sm:text-sm text-white/40 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-500 delay-100 line-clamp-2 leading-relaxed">
-            {item.description}
-          </p>
-        </div>
-      </div>
-    </motion.article>
-  );
-});
-
-ProjectCard.displayName = "ProjectCard";
+import { ProjectCard } from "./portfolio/ProjectCard";
+import { SectionHeader } from "./ui/SectionHeader";
+import { SectionWrapper } from "./ui/SectionWrapper";
+import { Reveal } from "./ui/Reveal";
 
 export const Portfolio = () => {
-  const shouldReduceMotion = useReducedMotion();
-
   return (
-    <section id="work" className="section-padding px-6 bg-[#080808] relative overflow-hidden">
-      {/* Subtle background glow */}
-      <div className="absolute top-0 left-0 w-full h-[500px] bg-blue-500/[0.02] rounded-full blur-[120px] -z-10" />
-      
-      <div className="section-container">
-        {/* Section Header */}
-        <motion.div
-          initial={shouldReduceMotion ? { opacity: 0 } : FADE_UP_VARIANTS.initial}
-          whileInView={FADE_UP_VARIANTS.animate}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={DEFAULT_TRANSITION}
-          className="flex flex-col md:flex-row md:items-end justify-between mb-16 md:mb-32 gap-10"
-        >
-          <div className="max-w-2xl">
-            <div className="section-eyebrow">
-              <div className="section-eyebrow-line" />
-              Portfolio
-            </div>
-            <h2 className="section-title">Selected Work</h2>
-            <p className="section-description">
-              A curated collection of high-performance content designed to scale modern brands and drive real results.
-            </p>
-          </div>
-          
-          {/* Client Tags */}
-          <div className="flex flex-col gap-4">
-            <span className="text-[9px] uppercase tracking-[0.3em] font-bold text-white/20">Trusted by</span>
-            <div className="flex flex-wrap gap-x-8 gap-y-4 text-[11px] md:text-xs font-bold uppercase tracking-widest text-text-muted">
-              {CLIENTS.map((client) => (
-                <span key={client} className="hover:text-white transition-colors cursor-default border-b border-transparent hover:border-white/20 pb-1">{client}</span>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Portfolio Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
-          {PROJECTS.map((item, i) => (
-            <ProjectCard key={i} item={item} index={i} />
-          ))}
+    <SectionWrapper id="work" className="bg-[#080808]" glowPosition="top">
+      {/* Section Header */}
+      <Reveal className="flex flex-col md:flex-row md:items-end justify-between mb-16 md:mb-32 gap-10">
+        <div className="max-w-2xl">
+          <SectionHeader 
+            eyebrow="Portfolio"
+            title="Selected Work"
+            description="A curated collection of high-performance content designed to scale modern brands and drive real results."
+            className="!mb-0"
+          />
         </div>
+        
+        {/* Client Tags */}
+        <div className="flex flex-col gap-4">
+          <span className="text-[9px] uppercase tracking-[0.3em] font-bold text-white/20">Trusted by</span>
+          <div className="flex flex-wrap gap-x-8 gap-y-4 text-[11px] md:text-xs font-bold uppercase tracking-widest text-text-muted">
+            {CLIENTS.map((client) => (
+              <span key={client} className="hover:text-white transition-colors cursor-default border-b border-transparent hover:border-white/20 pb-1">{client}</span>
+            ))}
+          </div>
+        </div>
+      </Reveal>
+
+      {/* Portfolio Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
+        {PROJECTS.map((item, i) => (
+          <ProjectCard key={i} item={item} index={i} />
+        ))}
       </div>
-    </section>
+    </SectionWrapper>
   );
 };

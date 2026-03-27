@@ -2,6 +2,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { Sparkles, Instagram, Video, QrCode } from "lucide-react";
 import { AR_FILTERS } from "../data/arFilters";
 import { FADE_UP_VARIANTS, SCALE_VARIANTS, DEFAULT_TRANSITION } from "../constants/motion";
+import { PillLabel } from "./ui/PillLabel";
 
 export const ARShowcase = () => {
   const shouldReduceMotion = useReducedMotion();
@@ -19,10 +20,10 @@ export const ARShowcase = () => {
             viewport={{ once: true }}
             transition={DEFAULT_TRANSITION}
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-[10px] uppercase tracking-[0.2em] font-bold text-purple-400 mb-6">
+            <PillLabel className="bg-purple-500/10 border-purple-500/20 text-purple-400 mb-6">
               <Sparkles className="w-3 h-3" />
               Interactive Tech
-            </div>
+            </PillLabel>
             <h2 className="text-3xl sm:text-4xl md:text-7xl font-bold mb-6 tracking-tight">AR Filters.</h2>
             <p className="section-description mb-8">
               Interactive AR filters for Instagram and TikTok. Combining graphic design with interactive technology to create engaging experiences that stop the scroll.
@@ -47,7 +48,7 @@ export const ARShowcase = () => {
             className="grid grid-cols-2 gap-4"
           >
             {AR_FILTERS.map((filter, i) => (
-              <div key={i} className="relative aspect-[2/3] rounded-3xl overflow-hidden border border-white/10 group">
+              <div key={i} className="relative aspect-[2/3] card-base card-hover group">
                 <img 
                   src={filter.img} 
                   alt={`${filter.title} AR filter for ${filter.platform}`} 

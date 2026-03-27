@@ -7,10 +7,9 @@ export const PROJECTS: Project[] = [
     poster: "/assets/work/biedronka-campaign-visuals.jpg",
     description: "Client: Biedronka | Agency: MAYER/McCANN | Goal: Retail performance | Result: High-impact social content.",
     previewImages: [
-      "https://picsum.photos/seed/biedronka1/800/1000",
-      "https://picsum.photos/seed/biedronka2/800/1000"
-    ],
-    hasVideoPreview: false
+      "/assets/work/biedronka-preview-1.jpg",
+      "/assets/work/biedronka-preview-2.jpg"
+    ]
   },
   { 
     title: "Google Educational Content", 
@@ -18,36 +17,32 @@ export const PROJECTS: Project[] = [
     poster: "/assets/work/google-educational-content.jpg",
     description: "Client: Google | Goal: Educational visuals | Result: Clear communication.",
     previewImages: [
-      "https://picsum.photos/seed/google1/800/1000",
-      "https://picsum.photos/seed/google2/800/1000"
-    ],
-    hasVideoPreview: false
+      "/assets/work/google-preview-1.jpg",
+      "/assets/work/google-preview-2.jpg"
+    ]
   },
   { 
     title: "TV Markiza Social Suite", 
     category: "Motion / Video", 
     poster: "/assets/work/tv-markiza-social-suite.jpg",
     description: "Client: TV Markiza | Goal: Brand refresh | Result: Modernized social presence.",
-    previewVideo: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-    hasVideoPreview: true
+    previewVideo: "/assets/video/tv-markiza-preview.mp4"
   },
   { 
     title: "Custom Instagram Filter", 
     category: "AR Filters", 
     poster: "/assets/work/custom-instagram-filter.jpg",
     description: "Client: AR Project | Goal: Viral engagement | Result: 100k+ impressions.",
-    previewVideo: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-    hasVideoPreview: true
+    previewVideo: "/assets/ar/instagram-filter-preview.mp4"
   },
   { 
     title: "MoliCare Social Campaign", 
     category: "Social Media Graphics", 
     poster: "/assets/work/mollicare-social-campaign.jpg",
-    description: "Client: Hartmann Slovakia | Goal: Educational content | Result: Improved accessibility.",
+    description: "Client: Hartmann | Goal: Educational content | Result: Improved accessibility.",
     previewImages: [
-      "https://picsum.photos/seed/molicare1/800/1000",
-      "https://picsum.photos/seed/molicare2/800/1000"
-    ],
-    hasVideoPreview: false
+      "/assets/work/molicare-preview-1.jpg",
+      "/assets/work/molicare-preview-2.jpg"
+    ]
   },
 ];
