@@ -16,7 +16,6 @@ const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPrev
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const imageIntervalRef = useRef<any>(null);
-  const videoTimeoutRef = useRef<any>(null);
 
   const previewImages = item.previewImages || [];
   const hasPreviewImages = previewImages.length > 0;
@@ -39,14 +38,11 @@ const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPrev
   // 2. Video Playback Logic
   useEffect(() => {
     if (isActive && item.hasVideoPreview && item.previewVideo) {
-      videoTimeoutRef.current = setTimeout(() => {
-        videoRef.current?.play().catch(() => {});
-        setIsVideoPlaying(true);
-      }, 3000);
+      videoRef.current?.play().catch(() => {});
+      setIsVideoPlaying(true);
     }
 
     return () => {
-      if (videoTimeoutRef.current) clearTimeout(videoTimeoutRef.current);
       if (!isActive) {
         if (videoRef.current) {
           videoRef.current.pause();
@@ -81,50 +77,34 @@ const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPrev
 
       {/* Layer 2: Image Sequence (Active State - Instant) */}
       {hasPreviewImages && (
-        <motion.div 
-          className="absolute inset-0 flex h-full"
-          initial={{ opacity: 0 }}
-          animate={{ 
-            opacity: isImageSequenceActive ? 1 : 0,
-            x: `-${currentImageIndex * 100}%`,
-            filter: isImageSequenceActive ? [
-              "blur(0px) brightness(1)",
-              "blur(4px) brightness(1.02)",
-              "blur(0px) brightness(1)"
-            ] : "blur(0px) brightness(1)",
-            scale: isImageSequenceActive ? [1, 1.005, 1] : 1
-          }}
-          style={{ willChange: "transform, opacity, filter" }}
-          transition={{ 
-            opacity: { duration: 0.2, ease: "easeOut" },
-            x: { 
-              duration: (!isActive || shouldReduceMotion) ? 0 : 0.4, 
-              ease: "easeInOut" 
-            },
-            filter: { 
-              duration: shouldReduceMotion ? 0 : 0.4, 
-              times: [0, 0.5, 1] 
-            },
-            scale: { 
-              duration: shouldReduceMotion ? 0 : 0.4, 
-              times: [0, 0.5, 1] 
-            }
-          }}
-        >
+        <div className="absolute inset-0">
           {previewImages.map((src, idx) => (
-            <img 
+            <motion.img
               key={idx}
-              src={src} 
-              alt={`${item.title} - Preview ${idx + 1}`} 
-              className="min-w-full flex-shrink-0 h-full object-cover"
+              src={src}
+              alt={`${item.title} - Preview ${idx + 1}`}
+              className="absolute inset-0 w-full h-full object-cover"
+              initial={{ opacity: 0, scale: 1.03 }}
+              animate={{ 
+                opacity: (isImageSequenceActive && idx === currentImageIndex) ? 1 : 0,
+                scale: (isImageSequenceActive && idx === currentImageIndex) ? 1 : 1.03,
+              }}
+              transition={{ 
+                opacity: { duration: 1, ease: [0.22, 1, 0.36, 1] },
+                scale: { 
+                  duration: shouldReduceMotion ? 0 : 1, 
+                  ease: [0.22, 1, 0.36, 1] 
+                }
+              }}
+              style={{ willChange: "opacity, transform" }}
               referrerPolicy="no-referrer"
               loading="lazy"
             />
           ))}
-        </motion.div>
+        </div>
       )}
 
-      {/* Layer 3: Video Preview (Active State - Delayed) */}
+      {/* Layer 3: Video Preview (Active State - Instant) */}
       {item.hasVideoPreview && item.previewVideo && (
         <motion.video
           ref={videoRef}
@@ -132,7 +112,7 @@ const ProjectPreview = memo(({ item, isActive, shouldReduceMotion }: ProjectPrev
           loop
           muted
           playsInline
-          preload="none"
+          preload="auto"
           initial={{ opacity: 0, filter: "blur(0px)" }}
           animate={{ 
             opacity: isVideoActive ? 1 : 0,
