@@ -1,3 +1,39 @@
+export interface NavLink {
+  id: string;
+  label: string;
+}
+
+export interface Service {
+  icon: string; // Icon name from lucide-react
+  title: string;
+  items: string[];
+}
+
+export interface PricingPackage {
+  name: string;
+  price: string;
+  features: string[];
+  popular: boolean;
+}
+
+export interface ExperienceItem {
+  icon: string; // Icon name from lucide-react
+  title: string;
+  desc: string;
+}
+
+export interface ToolItem {
+  name: string;
+  level: string;
+  desc: string;
+}
+
+export interface ProcessStep {
+  step: string;
+  title: string;
+  desc: string;
+}
+
 export interface Project {
   title: string;
   category: string;

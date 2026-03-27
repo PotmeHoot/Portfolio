@@ -46,41 +46,71 @@
   }
 }
 
-@layer utilities {
-  /* Scroll Progress Bar */
-  .scroll-progress {
-    @apply fixed top-0 left-0 right-0 h-[2px] bg-white/40 origin-left z-[100];
-  }
+/* Utilities */
+@utility scroll-progress {
+  @apply fixed top-0 left-0 right-0 h-[2px] bg-white/40 origin-left z-[100];
+}
 
-  /* Glassmorphism */
-  .glass {
-    @apply bg-white/[0.03] backdrop-blur-xl border border-white/10;
-  }
-  
-  .glass-hover {
-    @apply hover:bg-white/[0.08] hover:border-white/20 transition-all duration-500;
-  }
+@utility glass {
+  @apply bg-white/[0.03] backdrop-blur-xl border border-white/10;
+}
 
-  /* Typography Gradients */
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-b from-white to-white/40;
-  }
+@utility glass-hover {
+  @apply hover:bg-white/[0.08] hover:border-white/20 transition-all duration-500;
+}
 
-  .text-gradient-accent {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400;
-  }
+@utility text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-b from-white to-white/40;
+}
 
-  /* Glow Effects */
-  .glow-soft {
-    @apply shadow-[0_0_40px_rgba(255,255,255,0.05)];
-  }
+@utility text-gradient-accent {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400;
+}
 
-  .glow-accent {
-    @apply shadow-[0_0_60px_rgba(59,130,246,0.1)];
-  }
+@utility glow-soft {
+  @apply shadow-[0_0_40px_rgba(255,255,255,0.05)];
+}
 
-  /* Cards */
-  .card-premium {
-    @apply rounded-[32px] border border-white/5 bg-white/[0.02] transition-all duration-500;
-  }
+@utility glow-accent {
+  @apply shadow-[0_0_60px_rgba(59,130,246,0.1)];
+}
+
+@utility card-premium {
+  @apply rounded-[32px] border border-white/5 bg-white/[0.02] transition-all duration-500;
+}
+
+@utility card-glass {
+  @apply glass rounded-[40px] p-10 glass-hover;
+}
+
+@utility section-container {
+  @apply max-w-7xl mx-auto px-6;
+}
+
+@utility section-padding {
+  @apply py-20 md:py-40;
+}
+
+@utility section-eyebrow {
+  @apply text-[10px] uppercase tracking-[0.4em] font-bold text-white/20 mb-8 flex items-center gap-4;
+}
+
+@utility section-eyebrow-line {
+  @apply w-8 h-px bg-white/10;
+}
+
+@utility section-title {
+  @apply text-4xl sm:text-5xl md:text-8xl font-bold mb-8 tracking-tighter leading-[1.1];
+}
+
+@utility section-description {
+  @apply text-lg md:text-2xl text-text-secondary font-medium leading-relaxed max-w-2xl;
+}
+
+@utility btn-primary {
+  @apply w-full sm:w-auto px-8 py-4 md:px-10 md:py-5 bg-white text-black rounded-2xl font-bold text-lg flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)];
+}
+
+@utility btn-secondary {
+  @apply w-full sm:w-auto px-8 py-4 md:px-10 md:py-5 glass rounded-2xl font-bold text-lg hover:bg-white/10 transition-all flex items-center justify-center gap-3;
 }
