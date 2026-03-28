@@ -35,7 +35,11 @@ export const VideoPreview = ({
         opacity: { duration: 0.5 },
         filter: { duration: 0.4 },
       }}
-      style={{ willChange: "opacity, filter" }}
+      style={{ 
+        willChange: "opacity, filter",
+        // Prevent broken video icon from showing
+        backgroundColor: "transparent" 
+      }}
       className="w-full h-full object-cover"
     />
   );

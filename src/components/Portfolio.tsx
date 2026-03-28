@@ -1,15 +1,27 @@
+import { motion, useReducedMotion } from "motion/react";
 import { PROJECTS } from "../data/projects";
 import { CLIENTS } from "../data/clients";
+import { FADE_UP_VARIANTS, DEFAULT_TRANSITION } from "../constants/motion";
 import { ProjectCard } from "./portfolio/ProjectCard";
 import { SectionHeader } from "./ui/SectionHeader";
 import { SectionWrapper } from "./ui/SectionWrapper";
-import { Reveal } from "./ui/Reveal";
 
 export const Portfolio = () => {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
-    <SectionWrapper id="work" className="bg-[#080808]" glowPosition="top">
+    <SectionWrapper id="work" className="bg-[#080808]">
+      {/* Subtle background glow */}
+      <div className="absolute top-0 left-0 w-full h-[500px] bg-blue-500/[0.02] rounded-full blur-[120px] -z-10" />
+      
       {/* Section Header */}
-      <Reveal className="flex flex-col md:flex-row md:items-end justify-between mb-16 md:mb-32 gap-10">
+      <motion.div
+        initial={shouldReduceMotion ? { opacity: 0 } : FADE_UP_VARIANTS.initial}
+        whileInView={FADE_UP_VARIANTS.animate}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={DEFAULT_TRANSITION}
+        className="flex flex-col md:flex-row md:items-end justify-between mb-16 md:mb-32 gap-10"
+      >
         <div className="max-w-2xl">
           <SectionHeader 
             eyebrow="Portfolio"
@@ -28,7 +40,7 @@ export const Portfolio = () => {
             ))}
           </div>
         </div>
-      </Reveal>
+      </motion.div>
 
       {/* Portfolio Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">

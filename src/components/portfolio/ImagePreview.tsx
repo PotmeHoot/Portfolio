@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import { SafeImage } from "../ui/SafeImage";
 
 interface ImagePreviewProps {
   images: string[];
@@ -20,12 +21,9 @@ export const ImagePreview = ({
   return (
     <div className="absolute inset-0">
       {images.map((src, idx) => (
-        <motion.img
+        <motion.div
           key={idx}
-          src={src}
-          alt={`${projectTitle} - Preview ${idx + 1}`}
-          className="absolute inset-0 w-full h-full object-cover"
-          loading={idx === 0 ? "eager" : "lazy"}
+          className="absolute inset-0"
           initial={{ opacity: 0, scale: 1.03 }}
           animate={{
             opacity: isVisible && idx === activeSegmentIndex ? 1 : 0,
@@ -42,8 +40,15 @@ export const ImagePreview = ({
             },
           }}
           style={{ willChange: "opacity, transform" }}
-          referrerPolicy="no-referrer"
-        />
+        >
+          <SafeImage
+            src={src}
+            alt={`${projectTitle} - Preview ${idx + 1}`}
+            className="w-full h-full object-cover"
+            loading={idx === 0 ? "eager" : "lazy"}
+            containerClassName="w-full h-full"
+          />
+        </motion.div>
       ))}
     </div>
   );

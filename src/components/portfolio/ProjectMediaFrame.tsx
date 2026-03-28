@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import { SafeImage } from "../ui/SafeImage";
 
 interface ProjectMediaFrameProps {
   poster: string;
@@ -9,17 +10,21 @@ interface ProjectMediaFrameProps {
 
 export const ProjectMediaFrame = ({ poster, title, isIdle, isActive }: ProjectMediaFrameProps) => {
   return (
-    <motion.img
-      src={poster}
-      alt={title}
+    <motion.div
       initial={false}
       animate={{ 
         opacity: isIdle ? 1 : 0,
         scale: isActive ? 1 : 1.02,
       }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className="absolute inset-0 w-full h-full object-cover grayscale-[0.6] group-hover:grayscale-0 transition-all duration-700 z-10"
-      referrerPolicy="no-referrer"
-    />
+      className="absolute inset-0 z-10"
+    >
+      <SafeImage
+        src={poster}
+        alt={title}
+        className="w-full h-full object-cover grayscale-[0.6] group-hover:grayscale-0 transition-all duration-700"
+        containerClassName="w-full h-full"
+      />
+    </motion.div>
   );
 };

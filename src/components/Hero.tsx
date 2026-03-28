@@ -5,6 +5,7 @@ import { FADE_UP_VARIANTS, SCALE_VARIANTS, DEFAULT_TRANSITION } from "../constan
 
 import { Button } from "./ui/Button";
 import { PillLabel } from "./ui/PillLabel";
+import { SafeImage } from "./ui/SafeImage";
 
 export const Hero = () => {
   const shouldReduceMotion = useReducedMotion();
@@ -64,12 +65,12 @@ export const Hero = () => {
               transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
               className="absolute inset-0 z-10 rounded-[48px] overflow-hidden border border-white/10 shadow-2xl"
             >
-              <img 
+              <SafeImage 
                 src={HERO_ASSETS.main} 
                 alt="Juraj Žáček - Main Portfolio Visual showcasing creative design work" 
                 className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" 
-                referrerPolicy="no-referrer" 
                 loading="eager"
+                containerClassName="w-full h-full"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             </motion.div>
@@ -80,12 +81,12 @@ export const Hero = () => {
               transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
               className="absolute -top-12 -right-12 w-48 aspect-[4/5] rounded-3xl overflow-hidden border border-white/10 shadow-xl z-20 hidden xl:block"
             >
-              <img 
+              <SafeImage 
                 src={HERO_ASSETS.supporting1} 
                 alt="Creative social media content example - Supporting visual" 
                 className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" 
-                referrerPolicy="no-referrer" 
                 loading="eager"
+                containerClassName="w-full h-full"
               />
             </motion.div>
 
@@ -95,12 +96,12 @@ export const Hero = () => {
               transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
               className="absolute -bottom-8 -left-12 w-56 aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-xl z-20 hidden xl:block"
             >
-              <img 
+              <SafeImage 
                 src={HERO_ASSETS.supporting2} 
                 alt="Digital advertising content example - Supporting visual" 
                 className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" 
-                referrerPolicy="no-referrer" 
                 loading="eager"
+                containerClassName="w-full h-full"
               />
             </motion.div>
 

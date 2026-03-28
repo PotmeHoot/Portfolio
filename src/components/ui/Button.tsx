@@ -1,4 +1,5 @@
 import { ReactNode, AnchorHTMLAttributes } from "react";
+import { cn } from "../../lib/utils";
 
 interface ButtonProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   children: ReactNode;
@@ -10,15 +11,14 @@ interface ButtonProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
 export const Button = ({ 
   children, 
   variant = 'primary', 
-  className = "", 
+  className, 
   href,
   ...props 
 }: ButtonProps) => {
-  const baseClass = variant === 'primary' ? 'btn-primary' : 'btn-secondary';
   return (
     <a 
       href={href}
-      className={`${baseClass} ${className}`} 
+      className={cn(variant === 'primary' ? 'btn-primary' : 'btn-secondary', className)} 
       {...props}
     >
       {children}

@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { cn } from "../../lib/utils";
 
 interface SectionHeaderProps {
   eyebrow?: string;
@@ -13,19 +14,19 @@ export const SectionHeader = ({
   title, 
   description, 
   centered = false,
-  className = "" 
+  className 
 }: SectionHeaderProps) => {
   return (
-    <div className={`mb-20 md:mb-32 ${centered ? 'text-center' : ''} ${className}`}>
+    <div className={cn("mb-20 md:mb-32", centered && "text-center", className)}>
       {eyebrow && (
-        <div className={`section-eyebrow ${centered ? 'justify-center' : ''}`}>
+        <div className={cn("section-eyebrow", centered && "justify-center")}>
           {!centered && <div className="section-eyebrow-line" />}
           {eyebrow}
         </div>
       )}
       {title && <h2 className="section-title">{title}</h2>}
       {description && (
-        <p className={`section-description ${centered ? 'mx-auto' : ''}`}>
+        <p className={cn("section-description", centered && "mx-auto")}>
           {description}
         </p>
       )}

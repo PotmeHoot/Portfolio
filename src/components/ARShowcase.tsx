@@ -3,6 +3,7 @@ import { Sparkles, Instagram, Video, QrCode } from "lucide-react";
 import { AR_FILTERS } from "../data/arFilters";
 import { FADE_UP_VARIANTS, SCALE_VARIANTS, DEFAULT_TRANSITION } from "../constants/motion";
 import { PillLabel } from "./ui/PillLabel";
+import { SafeImage } from "./ui/SafeImage";
 
 export const ARShowcase = () => {
   const shouldReduceMotion = useReducedMotion();
@@ -49,12 +50,12 @@ export const ARShowcase = () => {
           >
             {AR_FILTERS.map((filter, i) => (
               <div key={i} className="relative aspect-[2/3] card-base card-hover group">
-                <img 
+                <SafeImage 
                   src={filter.img} 
                   alt={`${filter.title} AR filter for ${filter.platform}`} 
                   className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" 
                   loading="lazy"
-                  referrerPolicy="no-referrer"
+                  containerClassName="w-full h-full"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
                 <div className="absolute bottom-4 left-4 right-4">

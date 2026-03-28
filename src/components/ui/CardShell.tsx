@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { cn } from "../../lib/utils";
 
 interface CardShellProps {
   children: ReactNode;
@@ -8,12 +9,11 @@ interface CardShellProps {
 
 export const CardShell = ({ 
   children, 
-  className = "", 
+  className, 
   variant = 'glass' 
 }: CardShellProps) => {
-  const baseClass = variant === 'glass' ? 'card-glass' : 'card-premium';
   return (
-    <div className={`${baseClass} ${className}`}>
+    <div className={cn(variant === 'glass' ? 'card-glass' : 'card-premium', className)}>
       {children}
     </div>
   );
