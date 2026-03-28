@@ -38,14 +38,20 @@ export interface ProcessStep {
   desc: string;
 }
 
+export type ProjectType = 'graphic' | 'video' | 'motion' | 'AR';
+
 export interface Project {
   title: string;
   category: string;
-  poster: string;
+  poster?: string;
   description: string;
   link?: string;
   previewVideo?: string;
   previewImages?: string[];
+  icon?: IconName;
+  type?: ProjectType;
+  fallbackImage?: boolean;
+  fallbackVideo?: boolean;
 }
 
 export interface ARFilter {

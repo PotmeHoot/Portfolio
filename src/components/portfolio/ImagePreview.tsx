@@ -7,6 +7,7 @@ interface ImagePreviewProps {
   isVisible: boolean;
   shouldReduceMotion: boolean;
   projectTitle: string;
+  isHoverSupported: boolean;
 }
 
 export const ImagePreview = ({
@@ -15,6 +16,7 @@ export const ImagePreview = ({
   isVisible,
   shouldReduceMotion,
   projectTitle,
+  isHoverSupported,
 }: ImagePreviewProps) => {
   if (images.length === 0) return null;
 
@@ -31,11 +33,11 @@ export const ImagePreview = ({
           }}
           transition={{
             opacity: {
-              duration: idx === 0 && activeSegmentIndex === 0 ? 0.4 : 1,
+              duration: idx === 0 && activeSegmentIndex === 0 ? 0.4 : (isHoverSupported ? 1 : 0.4),
               ease: [0.22, 1, 0.36, 1],
             },
             scale: {
-              duration: shouldReduceMotion ? 0 : 1,
+              duration: shouldReduceMotion ? 0 : (isHoverSupported ? 1 : 0.6),
               ease: [0.22, 1, 0.36, 1],
             },
           }}

@@ -8,6 +8,7 @@ interface ProjectTimelineOverlayProps {
   activeSegmentIndex: number;
   activeSegmentProgress: number;
   videoDuration: number;
+  isHoverSupported: boolean;
 }
 
 export const ProjectTimelineOverlay = memo(({
@@ -16,7 +17,8 @@ export const ProjectTimelineOverlay = memo(({
   previewImages,
   activeSegmentIndex,
   activeSegmentProgress,
-  videoDuration
+  videoDuration,
+  isHoverSupported
 }: ProjectTimelineOverlayProps) => {
   return (
     <div className="absolute inset-0 z-40 pointer-events-none">
@@ -27,6 +29,7 @@ export const ProjectTimelineOverlay = memo(({
         activeSegmentIndex={activeSegmentIndex}
         activeSegmentProgress={activeSegmentProgress}
         isVisible={isImageSequenceActive}
+        isHoverSupported={isHoverSupported}
       />
 
       {/* Layer 5: Video Progress (Video Only) */}

@@ -7,6 +7,7 @@ interface PreviewTimelineProps {
   activeSegmentProgress?: number;
   videoDuration?: number;
   isVisible: boolean;
+  isHoverSupported?: boolean;
 }
 
 export const PreviewTimeline = ({
@@ -16,6 +17,7 @@ export const PreviewTimeline = ({
   activeSegmentProgress = 0,
   videoDuration = 10,
   isVisible,
+  isHoverSupported = true,
 }: PreviewTimelineProps) => {
   if (!isVisible) return null;
 
@@ -35,11 +37,11 @@ export const PreviewTimeline = ({
                   idx < activeSegmentIndex
                     ? "100%"
                     : idx === activeSegmentIndex
-                    ? `${activeSegmentProgress}%`
+                    ? (isHoverSupported ? `${activeSegmentProgress}%` : "100%")
                     : "0%",
               }}
               transition={{
-                duration: idx === activeSegmentIndex ? 0.032 : 0.1,
+                duration: idx === activeSegmentIndex ? (isHoverSupported ? 0.032 : 0.3) : 0.1,
                 ease: "linear",
               }}
             />

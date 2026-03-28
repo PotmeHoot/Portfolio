@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Project } from "../types";
 
 export const useProjectPreviewLoop = (item: Project, isActive: boolean) => {
@@ -11,6 +11,12 @@ export const useProjectPreviewLoop = (item: Project, isActive: boolean) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const rafRef = useRef<number | null>(null);
 
+  // Robust hover support detection
+  const [isHoverSupported, setIsHoverSupported] = useState(false);
+  useEffect(() => {
+    setIsHoverSupported(window.matchMedia("(hover: hover)").matches);
+  }, []);
+
   const previewImages = item.previewImages || [];
   const hasPreviewImages = previewImages.length > 0;
   const hasVideo = !!item.previewVideo && !videoError;
@@ -19,8 +25,17 @@ export const useProjectPreviewLoop = (item: Project, isActive: boolean) => {
   const isImageSequenceActive = isActive && hasPreviewImages && (!hasVideo || videoError);
   const isIdle = !isActive || (!isVideoActive && !isImageSequenceActive);
 
+  // Manual Advance for Mobile - strictly isolated to non-hover environments
+  const manualAdvance = useCallback(() => {
+    if (!isHoverSupported && isImageSequenceActive && previewImages.length > 1) {
+      setActiveSegmentIndex((prev) => (prev + 1) % previewImages.length);
+      setActiveSegmentProgress(0);
+    }
+  }, [isHoverSupported, isImageSequenceActive, previewImages.length]);
+
   useEffect(() => {
-    const shouldLoop = isImageSequenceActive && previewImages.length >= 1;
+    // Only run the automatic loop if hover is supported (Desktop)
+    const shouldLoop = isHoverSupported && isImageSequenceActive && previewImages.length >= 1;
 
     if (shouldLoop) {
       const totalDuration = 3000;
@@ -55,7 +70,7 @@ export const useProjectPreviewLoop = (item: Project, isActive: boolean) => {
         setActiveSegmentProgress(0);
       }
     };
-  }, [isActive, isImageSequenceActive, previewImages.length]);
+  }, [isActive, isImageSequenceActive, previewImages.length, isHoverSupported]);
 
   useEffect(() => {
     if (isActive && hasVideo && !videoError) {
@@ -106,11 +121,13 @@ export const useProjectPreviewLoop = (item: Project, isActive: boolean) => {
     videoRef,
     handleLoadedMetadata,
     handleVideoError,
+    manualAdvance,
     isVideoActive,
     isImageSequenceActive,
     isIdle,
     hasPreviewImages,
     hasVideo,
-    previewImages
+    previewImages,
+    isHoverSupported
   };
 };

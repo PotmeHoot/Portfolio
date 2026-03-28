@@ -1,4 +1,4 @@
-import { useState, memo, useCallback } from "react";
+import { useState, memo, useCallback, useEffect } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Project } from "../../types";
 import { DEFAULT_TRANSITION } from "../../constants/motion";
@@ -7,6 +7,8 @@ import { ProjectMediaFrame } from "./ProjectMediaFrame";
 import { ProjectInteractionPreview } from "./ProjectInteractionPreview";
 import { ProjectTimelineOverlay } from "./ProjectTimelineOverlay";
 import { ProjectMetaOverlay } from "./ProjectMetaOverlay";
+import { VideoIndicator } from "./ProjectPlaceholders";
+import { WorkCategoryIcon } from "./WorkCategoryIcon";
 
 interface ProjectCardProps {
   item: Project;
@@ -25,29 +27,47 @@ export const ProjectCard = memo(({ item, index }: ProjectCardProps) => {
     videoRef,
     handleLoadedMetadata,
     handleVideoError,
+    manualAdvance,
     isVideoActive,
     isImageSequenceActive,
     isIdle,
-    previewImages
+    previewImages,
+    hasVideo: hookHasVideo,
+    isHoverSupported
   } = useProjectPreviewLoop(item, isActive);
 
+  // Check if hover is supported (desktop vs mobile)
+  const [isHoverDevice, setIsHoverDevice] = useState(false);
+  useEffect(() => {
+    setIsHoverDevice(window.matchMedia("(hover: hover)").matches);
+  }, []);
+
   const handleMouseEnter = useCallback(() => {
-    if (window.matchMedia("(hover: hover)").matches) {
+    if (isHoverDevice) {
       setIsActive(true);
     }
-  }, []);
+  }, [isHoverDevice]);
 
   const handleMouseLeave = useCallback(() => {
-    if (window.matchMedia("(hover: hover)").matches) {
+    if (isHoverDevice) {
       setIsActive(false);
     }
-  }, []);
+  }, [isHoverDevice]);
 
   const handleClick = useCallback(() => {
-    if (!window.matchMedia("(hover: hover)").matches) {
-      setIsActive(prev => !prev);
+    // Only handle clicks for non-hover (touch) devices
+    if (!isHoverDevice) {
+      if (!isActive) {
+        setIsActive(true);
+      } else if (!hookHasVideo) {
+        // Only advance for image sequences
+        manualAdvance();
+      } else {
+        // For videos, follow original behavior (toggle)
+        setIsActive(false);
+      }
     }
-  }, []);
+  }, [isHoverDevice, isActive, manualAdvance, hookHasVideo]);
 
   return (
     <motion.article 
@@ -70,9 +90,15 @@ export const ProjectCard = memo(({ item, index }: ProjectCardProps) => {
           isActive={isActive} 
         />
 
+        {/* Category Icon (Top Left Corner) */}
+        <div className="absolute top-6 left-6 z-30 p-2.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white/40 pointer-events-none opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-500">
+          <WorkCategoryIcon category={item.category} type={item.type} />
+        </div>
+
         {/* Layer 2: Interaction Preview Layer (Images/Videos) */}
         <ProjectInteractionPreview 
           item={item}
+          isActive={isActive}
           isImageSequenceActive={isImageSequenceActive}
           isVideoActive={isVideoActive}
           activeSegmentIndex={activeSegmentIndex}
@@ -80,6 +106,7 @@ export const ProjectCard = memo(({ item, index }: ProjectCardProps) => {
           videoRef={videoRef}
           handleLoadedMetadata={handleLoadedMetadata}
           handleVideoError={handleVideoError}
+          isHoverSupported={isHoverSupported}
         />
 
         {/* Layer 3: Timeline Overlay Layer (Progress) */}
@@ -90,7 +117,13 @@ export const ProjectCard = memo(({ item, index }: ProjectCardProps) => {
           activeSegmentIndex={activeSegmentIndex}
           activeSegmentProgress={activeSegmentProgress}
           videoDuration={videoDuration}
+          isHoverSupported={isHoverSupported}
         />
+
+        {/* Video Indicator (Signals interactivity) */}
+        {hookHasVideo && (
+          <VideoIndicator isVisible={isIdle} />
+        )}
 
         {/* Layer 4: Visual Effects Layer (Gradient & Sweep) */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 z-20 pointer-events-none" />
@@ -111,6 +144,8 @@ export const ProjectCard = memo(({ item, index }: ProjectCardProps) => {
           category={item.category}
           title={item.title}
           description={item.description}
+          icon={item.icon}
+          type={item.type}
         />
       </div>
     </motion.article>
